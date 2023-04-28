@@ -256,6 +256,19 @@ func (c *ClusterConfig) SetConfigModifiedCallback(cb ConfigModifiedFn) {
 	}
 }
 
+func (c *ClusterConfig) SetConfigModifiedCallbackWithLock(cb ConfigModifiedFn, lock *sync.Mutex) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	c.configModifiedCallback = append(c.configModifiedCallback, cb)
+	for _, callback := range c.configModifiedCallback {
+		go func () {
+			lock.Lock()
+			callback()
+			lock.Unlock()
+		}
+	}
+}
+
 func setConfigFromKubeVirt(config *v1.KubeVirtConfiguration, kv *v1.KubeVirt) error {
 	kvConfig := &kv.Spec.Configuration
 	overrides, err := json.Marshal(kvConfig)

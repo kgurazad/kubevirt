@@ -427,7 +427,7 @@ func (app *virtHandlerApp) Run() {
 
 	// This callback can only be called only after the KubeVirt CR has synced,
 	// to avoid installing the SELinux policy when the feature gate is set
-	app.clusterConfig.SetConfigModifiedCallback(app.shouldInstallSELinuxPolicy)
+	app.clusterConfig.SetConfigModifiedCallbackWithLock(app.shouldInstallSELinuxPolicy, app.semoduleLock)
 
 	go vmController.Run(10, stop)
 
@@ -514,8 +514,6 @@ func (app *virtHandlerApp) shouldChangeRateLimiter() {
 
 // Install the SELinux policy when the feature gate that disables it gets removed
 func (app *virtHandlerApp) shouldInstallSELinuxPolicy() {
-	app.semoduleLock.Lock()
-	defer app.semoduleLock.Unlock()
 	if app.customSELinuxPolicyInstalled {
 		return
 	}
